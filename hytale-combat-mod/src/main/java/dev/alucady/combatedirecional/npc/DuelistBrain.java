@@ -117,6 +117,16 @@ public final class DuelistBrain {
             planReaction(c, o, now, cfg);
         }
 
+        // ---------------------------------------------------------- fui agarrado? tentar escapar
+        if (c.isGrabbed(now) && c.aiGrabHandled != c.grabbedUntil) {
+            c.aiGrabHandled = c.grabbedUntil;
+            if (roll() < d.reactionChance * 0.7) {
+                c.aiReaction = R_COUNTER;
+                c.aiReactionAt = Math.min(now + rand(d.reactionMinMs, d.reactionMaxMs), c.grabbedUntil - 30);
+                c.aiReactionGuard = null;
+            }
+        }
+
         // ---------------------------------------------------------- executar reação planejada
         if (c.aiReaction != R_NONE && now >= c.aiReactionAt) {
             int r = c.aiReaction;

@@ -14,3 +14,5 @@ commands.duelista.filtro = Text filter
 status.assetpack = Asset pack loaded!
 items.espada.name = Duelist Sword
 items.espada.description = Directional combat weapon. Flick the camera to change guard.
+commands.combate.perfil.desc = Directional Combat: applies a rules profile (fiel = measured values, original = project spec).
+commands.combate.perfil.arg = Profile: fiel or original

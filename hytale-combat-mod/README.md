@@ -46,7 +46,7 @@ hytale-combat-mod/
 
 1. Instale o **Java 25** ([Temurin](https://adoptium.net/)).
 2. Na pasta `hytale-combat-mod`: `gradlew.bat build` (Windows) ou `./gradlew build`.
-3. Copie `build/libs/CombateDirecional-0.2.0.jar` para a pasta `mods/` do servidor/mundo.
+3. Copie `build/libs/CombateDirecional-0.3.0.jar` para a pasta `mods/` do servidor/mundo.
 4. Reinicie o servidor / reabra o mundo.
 
 Se o seu jogo não estiver na versão 0.7.x, troque `hytale_server_version` em

@@ -14,3 +14,5 @@ commands.duelista.filtro = Filtro de texto
 status.assetpack = Asset pack carregado!
 items.espada.name = Espada de Duelo
 items.espada.description = Arma de combate direcional. Gire a camera rapido para trocar a guarda.
+commands.combate.perfil.desc = Combate Direcional: aplica um perfil de regras (fiel = valores medidos, original = especificacao).
+commands.combate.perfil.arg = Perfil: fiel ou original

@@ -114,9 +114,34 @@ public final class CombatRules {
 
     /** Troca de guarda (pelo mouse, comando ou IA). */
     public static void setGuard(Ref<EntityStore> ref, Combatant c, Direction dir, ComponentAccessor<EntityStore> cb, long now) {
-        if (c.guard == dir) return;
         if (c.state == Combatant.State.STUNNED && now < c.stateEnd) return;
+        int delay = cfg().controls.guardSwitchMs;
+        if (delay > 0) {
+            // A guarda nova só "vale" depois de X ms (como no jogo de referência).
+            if (c.guard == dir) {
+                c.pendingGuard = null;
+                return;
+            }
+            if (c.pendingGuard == dir) return;
+            c.pendingGuard = dir;
+            c.guardSwitchAt = now + delay;
+            playGuardAnimation(ref, c, dir, cb);
+            return;
+        }
+        if (c.guard == dir) return;
         c.guard = dir;
+        playGuardAnimation(ref, c, dir, cb);
+    }
+
+    /** Chamado pelo tick quando a troca de guarda com atraso termina. */
+    static void applyPendingGuard(Combatant c, long now) {
+        if (c.pendingGuard != null && now >= c.guardSwitchAt) {
+            c.guard = c.pendingGuard;
+            c.pendingGuard = null;
+        }
+    }
+
+    static void playGuardAnimation(Ref<EntityStore> ref, Combatant c, Direction dir, ComponentAccessor<EntityStore> cb) {
         if (c.state == Combatant.State.IDLE || c.state == Combatant.State.RECOVERY) {
             CombatConfig.Animations a = cfg().animations;
             Feedback.animation(ref, cb, switch (dir) {
@@ -212,14 +237,31 @@ public final class CombatRules {
                 a.setState(Combatant.State.RECOVERY, now, cfg.guardBreak.whiffRecoveryMs);
                 return;
             }
+            // Regra de vulnerabilidade: só pega quem está parado/recuperando ou no COMEÇO de um golpe.
+            if (t != null && cfg.guardBreak.vulnerabilityRules && t.state == Combatant.State.WINDUP
+                    && t.attackKind != null && t.attackKind.isStrike()) {
+                long total = t.impactAt - t.stateStart;
+                long elapsed = now - t.stateStart;
+                long vulnerable = total <= 700 ? cfg.guardBreak.vulnerableFastMs : cfg.guardBreak.vulnerableSlowMs;
+                if (elapsed > vulnerable) {
+                    a.setState(Combatant.State.RECOVERY, now, cfg.guardBreak.whiffRecoveryMs);
+                    return;
+                }
+            }
+            if (t != null && cfg.guardBreak.counterAfterLandMs > 0) {
+                // Agarrou: o alvo ainda tem uma janela para contra-quebrar antes do atordoamento.
+                t.setState(Combatant.State.RECOVERY, now, cfg.guardBreak.counterAfterLandMs);
+                t.grabbedBy = attackerRef;
+                t.grabbedUntil = now + cfg.guardBreak.counterAfterLandMs;
+                a.setState(Combatant.State.RECOVERY, now, cfg.guardBreak.counterAfterLandMs + 200);
+                Feedback.title(targetRef, cb, "AGARRADO!", "Aperte QUEBRA para escapar", "#ff8040");
+                Feedback.sound(cfg.feel.blockSound, targetRef, cb);
+                return;
+            }
             if (t != null) {
-                int stun = t.exhausted ? cfg.guardBreak.stunExhaustedMs : cfg.guardBreak.stunMs;
-                stun(targetRef, t, cb, now, stun);
-                Feedback.title(targetRef, cb, "GUARDA QUEBRADA!", t.exhausted ? "Exausto: atordoamento maior" : null, "#ff8040");
+                landGuardBreak(targetRef, t, cb, now);
             }
             Feedback.title(attackerRef, cb, "QUEBRA!", "Ataque agora", "#ffd040");
-            Feedback.particle(cfg.feel.guardBreakParticle, targetRef, cb);
-            Feedback.sound(cfg.feel.blockSound, targetRef, cb);
             a.setState(Combatant.State.RECOVERY, now, 200);
             return;
         }
@@ -254,15 +296,28 @@ public final class CombatRules {
         if (a.isFury(now)) {
             damage *= cfg.mana.furyDamageMultiplier;
         }
+        boolean counterHit = t != null && t.state == Combatant.State.WINDUP;
+        if (counterHit) {
+            damage *= cfg.block.counterHitMultiplier; // pegou o outro no meio do golpe
+        }
         // (o +25% de dano em alvo EXAUSTO é aplicado no filtro de dano, para valer contra qualquer fonte)
         applyDamage(attackerRef, targetRef, (float) damage, cb);
 
         if (kind == AttackKind.LIGHT) gainMana(a, cfg.lightAttack.manaGain);
         if (kind == AttackKind.HEAVY) gainMana(a, cfg.heavyAttack.manaGain);
 
-        // Golpe recebido interrompe o golpe que o alvo estava preparando.
-        if (t != null && t.state == Combatant.State.WINDUP) {
-            t.setState(Combatant.State.RECOVERY, now, 250);
+        // Golpe recebido interrompe o golpe que o alvo estava preparando,
+        // a não ser que o alvo esteja com "hiperarmadura" (2a parte de um pesado) e o golpe seja leve.
+        if (counterHit) {
+            boolean armored = false;
+            double from = cfg.heavyAttack.hyperArmorFrom;
+            if (from > 0 && kind == AttackKind.LIGHT && t.attackKind != null && t.attackKind.isHeavyLike()) {
+                double total = Math.max(1, t.impactAt - t.stateStart);
+                armored = (now - t.stateStart) / total >= from;
+            }
+            if (!armored) {
+                t.setState(Combatant.State.RECOVERY, now, 250);
+            }
         }
 
         // HIT-STOP: congelamos a linha do tempo de combate dos dois por alguns ms.
@@ -271,6 +326,8 @@ public final class CombatRules {
         a.setState(Combatant.State.RECOVERY, now, rec);
         if (t != null && t.state != Combatant.State.WINDUP) {
             t.stateEnd = Math.max(t.stateEnd, now) + hitStop;
+        } else if (t != null) {
+            t.impactAt += hitStop; // hiperarmadura: o golpe dele também "congela"
         }
 
         Feedback.sound(cfg.feel.hitSound, targetRef, cb);
@@ -296,6 +353,30 @@ public final class CombatRules {
         DamageSystems.executeDamage(targetRef, cb, damage);
     }
 
+    /** A quebra de guarda "pega" de vez: atordoa o alvo. */
+    static void landGuardBreak(Ref<EntityStore> targetRef, Combatant t, ComponentAccessor<EntityStore> cb, long now) {
+        CombatConfig cfg = cfg();
+        int stun = t.exhausted ? cfg.guardBreak.stunExhaustedMs : cfg.guardBreak.stunMs;
+        stun(targetRef, t, cb, now, stun);
+        Feedback.title(targetRef, cb, "GUARDA QUEBRADA!", t.exhausted ? "Exausto: atordoamento maior" : null, "#ff8040");
+        Feedback.particle(cfg.feel.guardBreakParticle, targetRef, cb);
+        Feedback.sound(cfg.feel.blockSound, targetRef, cb);
+    }
+
+    /** Chamado pelo tick: o agarrão terminou sem contra-quebra. */
+    static void resolveGrab(Ref<EntityStore> ref, Combatant c, ComponentAccessor<EntityStore> cb, long now) {
+        if (c.grabbedBy == null || now < c.grabbedUntil) return;
+        Ref<EntityStore> attackerRef = c.grabbedBy;
+        c.grabbedBy = null;
+        c.grabbedUntil = 0;
+        landGuardBreak(ref, c, cb, now);
+        if (attackerRef.isValid()) {
+            Combatant a = cb.getComponent(attackerRef, type());
+            if (a != null) a.setState(Combatant.State.RECOVERY, now, 200);
+            Feedback.title(attackerRef, cb, "QUEBRA!", "Ataque agora", "#ffd040");
+        }
+    }
+
     // =================================================================== APARO / FINTA / CONTRA-QUEBRA
 
     static boolean tryParry(Ref<EntityStore> ref, Combatant c, ComponentAccessor<EntityStore> cb, long now) {
@@ -305,11 +386,12 @@ public final class CombatRules {
             Combatant a = cb.getComponent(attackerRef, type());
             if (a == null || a.attackKind == null || !a.attackKind.isStrike()) continue;
             long remaining = a.impactAt - now;
-            if (remaining < 0 || remaining > cfg.parry.windowMs) continue;
+            if (remaining < cfg.parry.windowEndMs || remaining > cfg.parry.windowMs) continue;
             if (a.attackDir == null || c.guard != requiredGuard(a.attackDir)) continue;
 
             // APARO!
-            stun(attackerRef, a, cb, now, cfg.parry.attackerStunMs);
+            int stunMs = a.attackKind == AttackKind.LIGHT ? cfg.parry.lightParriedStunMs : cfg.parry.heavyParriedStunMs;
+            stun(attackerRef, a, cb, now, stunMs);
             gainMana(c, cfg.parry.manaGain);
             c.setState(Combatant.State.RECOVERY, now, 150);
             Feedback.animation(ref, cb, cfg.animations.parry);
@@ -326,6 +408,7 @@ public final class CombatRules {
     static boolean tryFeint(Ref<EntityStore> ref, Combatant c, ComponentAccessor<EntityStore> cb, long now) {
         if (c.state != Combatant.State.WINDUP || c.attackKind == null || !c.attackKind.isHeavyLike()) return false;
         CombatConfig cfg = cfg();
+        if (c.exhausted && !cfg.stamina.exhaustedCanFeint) return false; // sem stamina não finta
         if (c.impactAt - now <= cfg.heavyAttack.feintCutoffMs) return false; // tarde demais
         c.setState(Combatant.State.RECOVERY, now, cfg.heavyAttack.feintRecoveryMs);
         // Para a animação de ataque: tocamos a "pose de guarda" da direção atual.
@@ -336,6 +419,21 @@ public final class CombatRules {
     }
 
     static boolean tryCounterBreak(Ref<EntityStore> ref, Combatant c, ComponentAccessor<EntityStore> cb, long now) {
+        // Já fui agarrado: ainda dá para escapar dentro da janela de contra-quebra.
+        if (c.isGrabbed(now)) {
+            Ref<EntityStore> attackerRef = c.grabbedBy;
+            c.grabbedBy = null;
+            c.grabbedUntil = 0;
+            c.setState(Combatant.State.RECOVERY, now, 120);
+            if (attackerRef != null && attackerRef.isValid()) {
+                Combatant a = cb.getComponent(attackerRef, type());
+                if (a != null) a.setState(Combatant.State.RECOVERY, now, cfg().guardBreak.counteredRecoveryMs);
+                Feedback.title(attackerRef, cb, "QUEBRA ANULADA", null, "#ff6060");
+            }
+            Feedback.sound(cfg().feel.blockSound, ref, cb);
+            Feedback.title(ref, cb, "CONTRA-QUEBRA!", null, "#80ffb0");
+            return true;
+        }
         if (c.state == Combatant.State.STUNNED && now < c.stateEnd) return false;
         for (Ref<EntityStore> attackerRef : incomingAttackers(ref, cb)) {
             Combatant a = cb.getComponent(attackerRef, type());
@@ -404,13 +502,17 @@ public final class CombatRules {
     public static void startDodge(Ref<EntityStore> ref, Combatant c, ComponentAccessor<EntityStore> cb, long now, boolean roll) {
         // Pode esquivar durante a recuperação de um golpe (cancela a recuperação), mas não atordoado
         // nem no meio da preparação de um golpe.
-        if (c.state == Combatant.State.WINDUP) return;
+        if (c.state == Combatant.State.WINDUP || c.isGrabbed(now)) return;
         if (c.state == Combatant.State.STUNNED && now < c.stateEnd) return;
         if ((c.state == Combatant.State.DODGE || c.state == Combatant.State.ROLL) && now < c.stateEnd) return;
         CombatConfig cfg = cfg();
 
         // direção: para onde estou andando, em relação para onde estou olhando
+        if (roll && c.exhausted && !cfg.stamina.exhaustedCanRoll) {
+            roll = false; // sem stamina não rola: vira esquiva curta
+        }
         double[] fwd = forward(ref, cb);
+        boolean forwardDodge = false;
         double mx = c.velX, mz = c.velZ;
         double speed = Math.hypot(mx, mz);
         double dx, dz;
@@ -425,6 +527,7 @@ public final class CombatRules {
             double along = dx * fwd[0] + dz * fwd[1];
             double side = dx * (-fwd[1]) + dz * fwd[0]; // >0 = direita
             if (Math.abs(along) >= Math.abs(side)) {
+                forwardDodge = along >= 0;
                 anim = along >= 0 ? cfg.animations.dodgeForward : cfg.animations.dodgeBack;
             } else {
                 anim = side >= 0 ? cfg.animations.dodgeRight : cfg.animations.dodgeLeft;
@@ -434,13 +537,15 @@ public final class CombatRules {
         if (roll) {
             spendStamina(ref, c, cfg.roll.staminaCost, cb, now);
             c.setState(Combatant.State.ROLL, now, cfg.roll.durationMs);
+            c.invulnerableFrom = now;
             c.invulnerableUntil = now + Math.round(cfg.roll.durationMs * cfg.roll.invulnerableFraction);
             push(ref, cb, dx, dz, cfg.roll.impulse);
             Feedback.animation(ref, cb, cfg.animations.roll);
         } else {
             spendStamina(ref, c, cfg.dodge.staminaCost, cb, now);
             c.setState(Combatant.State.DODGE, now, cfg.dodge.durationMs);
-            c.invulnerableUntil = now + cfg.dodge.invulnerableMs;
+            c.invulnerableFrom = now + cfg.dodge.invulnerableStartMs;
+            c.invulnerableUntil = (forwardDodge && !cfg.dodge.forwardInvulnerable) ? now : now + cfg.dodge.invulnerableMs;
             push(ref, cb, dx, dz, cfg.dodge.impulse);
             Feedback.animation(ref, cb, anim);
         }

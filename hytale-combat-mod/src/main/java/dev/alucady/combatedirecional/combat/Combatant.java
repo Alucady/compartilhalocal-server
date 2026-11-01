@@ -42,7 +42,17 @@ public final class Combatant implements Component<EntityStore> {
     public long attackSerial;
 
     // --------------------------------------------------------------- esquiva / rolamento
+    public long invulnerableFrom;
     public long invulnerableUntil;
+
+    // --------------------------------------------------------------- troca de guarda com atraso
+    @Nullable public Direction pendingGuard;
+    public long guardSwitchAt;
+
+    // --------------------------------------------------------------- agarrado por uma quebra de guarda
+    @Nullable public Ref<EntityStore> grabbedBy;
+    public long grabbedUntil;
+    public long aiGrabHandled;
 
     // --------------------------------------------------------------- recursos
     public double stamina = -1;   // -1 = ainda não inicializado (usa o máximo do config)
@@ -87,7 +97,7 @@ public final class Combatant implements Component<EntityStore> {
     // ================================================================ helpers
 
     public boolean isInvulnerable(long now) {
-        return now < this.invulnerableUntil;
+        return now >= this.invulnerableFrom && now < this.invulnerableUntil;
     }
 
     public boolean isFury(long now) {
@@ -95,7 +105,12 @@ public final class Combatant implements Component<EntityStore> {
     }
 
     /** Pode iniciar uma ação nova agora? */
+    public boolean isGrabbed(long now) {
+        return this.grabbedBy != null && now < this.grabbedUntil;
+    }
+
     public boolean canAct(long now) {
+        if (isGrabbed(now)) return false;
         return switch (this.state) {
             case IDLE -> true;
             case RECOVERY, DODGE, ROLL, STUNNED -> now >= this.stateEnd;

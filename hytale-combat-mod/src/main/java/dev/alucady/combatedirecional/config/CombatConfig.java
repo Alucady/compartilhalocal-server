@@ -41,6 +41,7 @@ public final class CombatConfig {
         public int feintCutoffMs = 140; // só dá pra fintar até X ms antes do impacto
         public int feintRecoveryMs = 120; // PROPOSTA: tempo até agir de novo após fintar
         public int recoveryMs = 500;    // PROPOSTA
+        public double hyperArmorFrom = 0;  // 0 = desligado. 0.5 = na 2a metade da preparação um golpe leve não interrompe
 
         public static final BuilderCodec<HeavyAttack> CODEC = BuilderCodec.builder(HeavyAttack.class, HeavyAttack::new)
                 .append(new KeyedCodec<>("WindupMs", Codec.INTEGER), (o, v) -> o.windupMs = v, o -> o.windupMs).add()
@@ -49,6 +50,7 @@ public final class CombatConfig {
                 .append(new KeyedCodec<>("ManaGain", Codec.INTEGER), (o, v) -> o.manaGain = v, o -> o.manaGain).add()
                 .append(new KeyedCodec<>("FeintCutoffMs", Codec.INTEGER), (o, v) -> o.feintCutoffMs = v, o -> o.feintCutoffMs).add()
                 .append(new KeyedCodec<>("FeintRecoveryMs", Codec.INTEGER), (o, v) -> o.feintRecoveryMs = v, o -> o.feintRecoveryMs).add()
+                .append(new KeyedCodec<>("HyperArmorFrom", Codec.DOUBLE), (o, v) -> o.hyperArmorFrom = v, o -> o.hyperArmorFrom).add()
                 .append(new KeyedCodec<>("RecoveryMs", Codec.INTEGER), (o, v) -> o.recoveryMs = v, o -> o.recoveryMs).add()
                 .build();
     }
@@ -58,22 +60,30 @@ public final class CombatConfig {
         public int manaGain = 6;
         public int attackerRecoilMs = 350;   // PROPOSTA: atacante "quica" na guarda
         public double heavyChipDamage = 0;   // PROPOSTA: dano que passa pela guarda no pesado
+        public double counterHitMultiplier = 1.0; // dano extra ao acertar alguém que está preparando golpe
 
         public static final BuilderCodec<Block> CODEC = BuilderCodec.builder(Block.class, Block::new)
                 .append(new KeyedCodec<>("ManaGain", Codec.INTEGER), (o, v) -> o.manaGain = v, o -> o.manaGain).add()
                 .append(new KeyedCodec<>("AttackerRecoilMs", Codec.INTEGER), (o, v) -> o.attackerRecoilMs = v, o -> o.attackerRecoilMs).add()
                 .append(new KeyedCodec<>("HeavyChipDamage", Codec.DOUBLE), (o, v) -> o.heavyChipDamage = v, o -> o.heavyChipDamage).add()
+                .append(new KeyedCodec<>("CounterHitMultiplier", Codec.DOUBLE), (o, v) -> o.counterHitMultiplier = v, o -> o.counterHitMultiplier).add()
                 .build();
     }
 
     // ------------------------------------------------------------------ Aparo
     public static final class Parry {
         public int windowMs = 300;        // últimos X ms do golpe inimigo
+        public int windowEndMs = 0;       // a janela fecha X ms antes do impacto (0 = vai até o impacto)
+        public int lightParriedStunMs = 850;
+        public int heavyParriedStunMs = 850;
         public int attackerStunMs = 850;
         public int manaGain = 20;
 
         public static final BuilderCodec<Parry> CODEC = BuilderCodec.builder(Parry.class, Parry::new)
                 .append(new KeyedCodec<>("WindowMs", Codec.INTEGER), (o, v) -> o.windowMs = v, o -> o.windowMs).add()
+                .append(new KeyedCodec<>("WindowEndMs", Codec.INTEGER), (o, v) -> o.windowEndMs = v, o -> o.windowEndMs).add()
+                .append(new KeyedCodec<>("LightParriedStunMs", Codec.INTEGER), (o, v) -> o.lightParriedStunMs = v, o -> o.lightParriedStunMs).add()
+                .append(new KeyedCodec<>("HeavyParriedStunMs", Codec.INTEGER), (o, v) -> o.heavyParriedStunMs = v, o -> o.heavyParriedStunMs).add()
                 .append(new KeyedCodec<>("AttackerStunMs", Codec.INTEGER), (o, v) -> o.attackerStunMs = v, o -> o.attackerStunMs).add()
                 .append(new KeyedCodec<>("ManaGain", Codec.INTEGER), (o, v) -> o.manaGain = v, o -> o.manaGain).add()
                 .build();
@@ -87,6 +97,10 @@ public final class CombatConfig {
         public int staminaCost = 10;         // PROPOSTA
         public int whiffRecoveryMs = 450;    // PROPOSTA: errou a quebra
         public int counteredRecoveryMs = 500; // PROPOSTA: quebra contra-quebrada
+        public int counterAfterLandMs = 0;   // janela p/ contra-quebrar DEPOIS que a quebra pega (0 = só durante a preparação)
+        public boolean vulnerabilityRules = false; // só pega golpes no começo da preparação
+        public int vulnerableFastMs = 100;   // golpes de até 700 ms: vulnerável nos primeiros X ms
+        public int vulnerableSlowMs = 400;   // golpes mais lentos: vulnerável nos primeiros X ms
 
         public static final BuilderCodec<GuardBreak> CODEC = BuilderCodec.builder(GuardBreak.class, GuardBreak::new)
                 .append(new KeyedCodec<>("WindupMs", Codec.INTEGER), (o, v) -> o.windupMs = v, o -> o.windupMs).add()
@@ -95,6 +109,10 @@ public final class CombatConfig {
                 .append(new KeyedCodec<>("StaminaCost", Codec.INTEGER), (o, v) -> o.staminaCost = v, o -> o.staminaCost).add()
                 .append(new KeyedCodec<>("WhiffRecoveryMs", Codec.INTEGER), (o, v) -> o.whiffRecoveryMs = v, o -> o.whiffRecoveryMs).add()
                 .append(new KeyedCodec<>("CounteredRecoveryMs", Codec.INTEGER), (o, v) -> o.counteredRecoveryMs = v, o -> o.counteredRecoveryMs).add()
+                .append(new KeyedCodec<>("CounterAfterLandMs", Codec.INTEGER), (o, v) -> o.counterAfterLandMs = v, o -> o.counterAfterLandMs).add()
+                .append(new KeyedCodec<>("VulnerabilityRules", Codec.BOOLEAN), (o, v) -> o.vulnerabilityRules = v, o -> o.vulnerabilityRules).add()
+                .append(new KeyedCodec<>("VulnerableFastMs", Codec.INTEGER), (o, v) -> o.vulnerableFastMs = v, o -> o.vulnerableFastMs).add()
+                .append(new KeyedCodec<>("VulnerableSlowMs", Codec.INTEGER), (o, v) -> o.vulnerableSlowMs = v, o -> o.vulnerableSlowMs).add()
                 .build();
     }
 
@@ -104,12 +122,16 @@ public final class CombatConfig {
         public int staminaCost = 12;
         public int durationMs = 450;     // PROPOSTA: duração total da esquiva
         public double impulse = 9.0;     // PROPOSTA: força do impulso (blocos/s)
+        public int invulnerableStartMs = 0; // invencibilidade começa X ms depois do início
+        public boolean forwardInvulnerable = true; // esquiva para frente também é invencível?
 
         public static final BuilderCodec<Dodge> CODEC = BuilderCodec.builder(Dodge.class, Dodge::new)
                 .append(new KeyedCodec<>("InvulnerableMs", Codec.INTEGER), (o, v) -> o.invulnerableMs = v, o -> o.invulnerableMs).add()
                 .append(new KeyedCodec<>("StaminaCost", Codec.INTEGER), (o, v) -> o.staminaCost = v, o -> o.staminaCost).add()
                 .append(new KeyedCodec<>("DurationMs", Codec.INTEGER), (o, v) -> o.durationMs = v, o -> o.durationMs).add()
                 .append(new KeyedCodec<>("Impulse", Codec.DOUBLE), (o, v) -> o.impulse = v, o -> o.impulse).add()
+                .append(new KeyedCodec<>("InvulnerableStartMs", Codec.INTEGER), (o, v) -> o.invulnerableStartMs = v, o -> o.invulnerableStartMs).add()
+                .append(new KeyedCodec<>("ForwardInvulnerable", Codec.BOOLEAN), (o, v) -> o.forwardInvulnerable = v, o -> o.forwardInvulnerable).add()
                 .build();
     }
 
@@ -140,6 +162,8 @@ public final class CombatConfig {
         public double exhaustedDamageTakenMultiplier = 1.25; // +25% de dano recebido
         public boolean regenOnlyWhenStill = true;   // "regenera parado"
         public boolean mirrorToVanillaBar = true;   // mostra nossa stamina na barra do jogo
+        public boolean exhaustedCanFeint = true;
+        public boolean exhaustedCanRoll = true;
 
         public static final BuilderCodec<Stamina> CODEC = BuilderCodec.builder(Stamina.class, Stamina::new)
                 .append(new KeyedCodec<>("Max", Codec.DOUBLE), (o, v) -> o.max = v, o -> o.max).add()
@@ -149,6 +173,8 @@ public final class CombatConfig {
                 .append(new KeyedCodec<>("ExhaustedWindupMultiplier", Codec.DOUBLE), (o, v) -> o.exhaustedWindupMultiplier = v, o -> o.exhaustedWindupMultiplier).add()
                 .append(new KeyedCodec<>("ExhaustedDamageTakenMultiplier", Codec.DOUBLE), (o, v) -> o.exhaustedDamageTakenMultiplier = v, o -> o.exhaustedDamageTakenMultiplier).add()
                 .append(new KeyedCodec<>("RegenOnlyWhenStill", Codec.BOOLEAN), (o, v) -> o.regenOnlyWhenStill = v, o -> o.regenOnlyWhenStill).add()
+                .append(new KeyedCodec<>("ExhaustedCanFeint", Codec.BOOLEAN), (o, v) -> o.exhaustedCanFeint = v, o -> o.exhaustedCanFeint).add()
+                .append(new KeyedCodec<>("ExhaustedCanRoll", Codec.BOOLEAN), (o, v) -> o.exhaustedCanRoll = v, o -> o.exhaustedCanRoll).add()
                 .append(new KeyedCodec<>("MirrorToVanillaBar", Codec.BOOLEAN), (o, v) -> o.mirrorToVanillaBar = v, o -> o.mirrorToVanillaBar).add()
                 .build();
     }
@@ -220,6 +246,7 @@ public final class CombatConfig {
         public boolean invertYaw = false;       // troque se esquerda/direita ficarem trocadas
         public boolean mirrorSides = true;      // golpe vindo da esquerda do atacante chega na SUA direita
         public boolean guardOnlyWhileCrouching = false; // true = só troca guarda segurando agachar
+        public int guardSwitchMs = 0;           // tempo para a nova guarda "valer" (0 = instantâneo)
 
         public static final BuilderCodec<Controls> CODEC = BuilderCodec.builder(Controls.class, Controls::new)
                 .append(new KeyedCodec<>("FlickYawDegrees", Codec.DOUBLE), (o, v) -> o.flickYawDegrees = v, o -> o.flickYawDegrees).add()
@@ -228,6 +255,7 @@ public final class CombatConfig {
                 .append(new KeyedCodec<>("InvertYaw", Codec.BOOLEAN), (o, v) -> o.invertYaw = v, o -> o.invertYaw).add()
                 .append(new KeyedCodec<>("MirrorSides", Codec.BOOLEAN), (o, v) -> o.mirrorSides = v, o -> o.mirrorSides).add()
                 .append(new KeyedCodec<>("GuardOnlyWhileCrouching", Codec.BOOLEAN), (o, v) -> o.guardOnlyWhileCrouching = v, o -> o.guardOnlyWhileCrouching).add()
+                .append(new KeyedCodec<>("GuardSwitchMs", Codec.INTEGER), (o, v) -> o.guardSwitchMs = v, o -> o.guardSwitchMs).add()
                 .build();
     }
 
@@ -338,6 +366,7 @@ public final class CombatConfig {
     }
 
     // ------------------------------------------------------------------ Arquivo completo
+    public String profile = "Original";
     public LightAttack lightAttack = new LightAttack();
     public HeavyAttack heavyAttack = new HeavyAttack();
     public Block block = new Block();
@@ -356,6 +385,7 @@ public final class CombatConfig {
 
     public static final BuilderCodec<CombatConfig> CODEC = BuilderCodec.builder(CombatConfig.class, CombatConfig::new)
             .documentation("Valores do Combate Direcional. Tempos em milissegundos.")
+            .append(new KeyedCodec<>("Profile", Codec.STRING), (o, v) -> o.profile = v, o -> o.profile).add()
             .append(new KeyedCodec<>("LightAttack", LightAttack.CODEC), (o, v) -> o.lightAttack = v, o -> o.lightAttack).add()
             .append(new KeyedCodec<>("HeavyAttack", HeavyAttack.CODEC), (o, v) -> o.heavyAttack = v, o -> o.heavyAttack).add()
             .append(new KeyedCodec<>("Block", Block.CODEC), (o, v) -> o.block = v, o -> o.block).add()

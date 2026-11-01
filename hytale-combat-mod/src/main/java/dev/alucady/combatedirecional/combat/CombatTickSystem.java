@@ -71,6 +71,9 @@ public final class CombatTickSystem extends EntityTickingSystem<EntityStore> {
             updateFlick(ref, c, cb, now, cfg);
         }
 
+        CombatRules.applyPendingGuard(c, now);
+        CombatRules.resolveGrab(ref, c, cb, now);
+
         // ---------------------------------------------------------- máquina de estados
         switch (c.state) {
             case WINDUP -> {
@@ -244,6 +247,7 @@ public final class CombatTickSystem extends EntityTickingSystem<EntityStore> {
 
         // linha 1: minha guarda + guarda do inimigo à frente
         StringBuilder guard = new StringBuilder("GUARDA " + c.guard.arrow + " " + c.guard.label);
+        if (c.pendingGuard != null) guard.append(" → ").append(c.pendingGuard.arrow);
         Ref<EntityStore> foe = CombatRules.acquireTarget(ref, cb, cfg.reach.lockOnRange, 60);
         if (foe != null) {
             Combatant f = cb.getComponent(foe, CombatRules.type());
@@ -260,11 +264,12 @@ public final class CombatTickSystem extends EntityTickingSystem<EntityStore> {
         stats.append("   |   MANA ").append(Math.round(c.mana)).append('/').append(Math.round(cfg.mana.max));
         if (c.exhausted) stats.append("   |   EXAUSTO");
         if (c.isFury(now)) stats.append("   |   FÚRIA ").append((c.furyUntil - now) / 1000 + 1).append('s');
+        stats.append("   |   Perfil ").append(cfg.profile);
         if (c.mana >= cfg.mana.furyCost) stats.append("   |   Fúria pronta (agachar + quebra)");
         else if (c.mana >= cfg.mana.arcaneStrikeCost) stats.append("   |   Arcano pronto (agachar + pesado)");
 
         // linha 3: golpe chegando
-        String incoming = "";
+        String incoming = c.isGrabbed(now) ? "⚠ AGARRADO! Aperte QUEBRA para escapar" : "";
         List<Ref<EntityStore>> attackers = CombatRules.incomingAttackers(ref, cb);
         long bestRemaining = Long.MAX_VALUE;
         for (Ref<EntityStore> aRef : attackers) {
@@ -277,7 +282,7 @@ public final class CombatTickSystem extends EntityTickingSystem<EntityStore> {
                 incoming = "⚠ QUEBRA DE GUARDA! Aperte QUEBRA para contra-quebrar";
             } else {
                 Direction req = CombatRules.requiredGuard(a.attackDir);
-                boolean parryNow = remaining <= cfg.parry.windowMs;
+                boolean parryNow = remaining <= cfg.parry.windowMs && remaining >= cfg.parry.windowEndMs;
                 if (a.attackKind == AttackKind.ARCANE) {
                     incoming = "⚠ ARCANO (imbloqueável) " + req.arrow + " — esquive ou apare" + (parryNow ? "  [APARE!]" : "");
                 } else {

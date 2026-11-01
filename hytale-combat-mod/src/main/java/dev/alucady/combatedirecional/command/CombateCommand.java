@@ -17,6 +17,7 @@ import dev.alucady.combatedirecional.combat.CombatRules;
 import dev.alucady.combatedirecional.combat.Combatant;
 import dev.alucady.combatedirecional.combat.Direction;
 import dev.alucady.combatedirecional.config.CombatConfig;
+import dev.alucady.combatedirecional.config.Profiles;
 
 import javax.annotation.Nonnull;
 import java.util.Locale;
@@ -42,6 +43,7 @@ public final class CombateCommand extends CommandBase {
         this.addSubCommand(new Hud());
         this.addSubCommand(new Guarda());
         this.addSubCommand(new Acao());
+        this.addSubCommand(new Perfil(plugin));
     }
 
     @Override
@@ -61,6 +63,7 @@ public final class CombateCommand extends CommandBase {
                 "Leve: %d ms, dano %.0f | Pesado: %d ms, dano %.0f | Aparo: %d ms | Quebra: %d ms",
                 c.lightAttack.windupMs, c.lightAttack.damage, c.heavyAttack.windupMs, c.heavyAttack.damage,
                 c.parry.windowMs, c.guardBreak.windupMs)));
+        context.sendMessage(Message.raw("Perfil de regras: " + c.profile + "  (/combate perfil fiel | original)").color("#a0d0ff"));
         context.sendMessage(Message.raw("Pegue a espada: /give CombateDirecional_Espada").color("#a0d0ff"));
         context.sendMessage(Message.raw("CONTROLES (segurando a espada):").bold(true));
         context.sendMessage(Message.raw(" Guarda: gire a camera rapido p/ esquerda/direita, ou olhe rapido p/ cima"));
@@ -161,6 +164,34 @@ public final class CombateCommand extends CommandBase {
                 }
                 default -> context.sendMessage(Message.raw("Use: leve, pesado, quebra, esquiva ou rolar").color("#ff6060"));
             }
+        }
+    }
+
+    // ------------------------------------------------------------------ /combate perfil <fiel|original>
+    static final class Perfil extends CommandBase {
+        private final CombateDirecionalPlugin plugin;
+        private final RequiredArg<String> nameArg =
+                this.withRequiredArg("perfil", "combatedirecional.commands.combate.perfil.arg", ArgTypes.STRING);
+
+        Perfil(@Nonnull CombateDirecionalPlugin plugin) {
+            super("perfil", "combatedirecional.commands.combate.perfil.desc");
+            this.plugin = plugin;
+        }
+
+        @Override
+        protected void executeSync(@Nonnull CommandContext context) {
+            String name = this.nameArg.get(context).toLowerCase(Locale.ROOT);
+            CombatConfig cfg = this.plugin.combat();
+            switch (name) {
+                case "fiel", "faithful" -> Profiles.applyFaithful(cfg);
+                case "original", "padrao" -> Profiles.applyOriginal(cfg);
+                default -> {
+                    context.sendMessage(Message.raw("Use: /combate perfil fiel  ou  /combate perfil original").color("#ff6060"));
+                    return;
+                }
+            }
+            this.plugin.saveConfig();
+            context.sendMessage(Message.raw("Perfil '" + cfg.profile + "' aplicado e salvo no CombatConfig.json.").color("#60e060"));
         }
     }
 }

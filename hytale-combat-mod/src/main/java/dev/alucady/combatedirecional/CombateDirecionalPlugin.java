@@ -52,6 +52,11 @@ public final class CombateDirecionalPlugin extends JavaPlugin {
         return this.combatantType;
     }
 
+    /** Grava o config atual no disco. */
+    public void saveConfig() {
+        this.config.save();
+    }
+
     /** Relê o CombatConfig.json do disco. */
     public void reloadConfig() {
         this.config.load().join();
