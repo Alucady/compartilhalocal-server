@@ -1,4 +1,16 @@
 # Textos do mod em portugues. A chave final fica "combatedirecional.<chave>".
-commands.combate.desc = Combate Direcional: mostra o status do mod e a configuracao carregada.
+commands.combate.desc = Combate Direcional: status do mod e controles.
 commands.combate.recarregar.desc = Combate Direcional: recarrega o CombatConfig.json do disco.
+commands.combate.hud.desc = Combate Direcional: liga/desliga o HUD de combate.
+commands.combate.guarda.desc = Combate Direcional: muda sua guarda (esquerda, cima, direita).
+commands.combate.guarda.arg = Direcao: esquerda, cima ou direita
+commands.combate.acao.desc = Combate Direcional: executa uma acao (leve, pesado, quebra, esquiva, rolar).
+commands.combate.acao.arg = Acao: leve, pesado, quebra, esquiva ou rolar
+commands.duelista.desc = Combate Direcional: cria um duelista de treino na sua frente.
+commands.duelista.papel = Papel (role) de NPC usado como corpo do duelista
+commands.duelista.remover.desc = Combate Direcional: remove os duelistas de treino.
+commands.duelista.papeis.desc = Combate Direcional: lista os papeis de NPC disponiveis.
+commands.duelista.filtro = Filtro de texto
 status.assetpack = Asset pack carregado!
+items.espada.name = Espada de Duelo
+items.espada.description = Arma de combate direcional. Gire a camera rapido para trocar a guarda.

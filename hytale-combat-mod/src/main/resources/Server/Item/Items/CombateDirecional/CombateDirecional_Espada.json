@@ -1,0 +1,14 @@
+{
+  "Parent": "Weapon_Sword_Iron",
+  "TranslationProperties": {
+    "Name": "combatedirecional.items.espada.name",
+    "Description": "combatedirecional.items.espada.description"
+  },
+  "Interactions": {
+    "Primary": "CombateDirecional_Root_Leve",
+    "Secondary": "CombateDirecional_Root_Pesado",
+    "Ability1": "CombateDirecional_Root_Quebra",
+    "Use": "CombateDirecional_Root_Esquiva",
+    "Dodge": "CombateDirecional_Root_Esquiva"
+  }
+}

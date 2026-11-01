@@ -1,117 +1,151 @@
 # Combate Direcional — mod para Hytale
 
-Combate direcional (guarda em 3 direções, aparo, finta, quebra de guarda),
-esquiva/rolamento, stamina, mana e habilidades. Tudo original, feito a partir
-da observação das mecânicas — nenhum arquivo de outro jogo é usado.
+Combate direcional (guarda em 3 direções, bloqueio, aparo, finta, quebra de
+guarda), esquiva e rolamento com invencibilidade, stamina com exaustão, mana com
+Golpe Arcano e Fúria, HUD de combate e um NPC duelista para treinar.
+Tudo original, recriado a partir da observação das mecânicas.
 
-**Fase atual: 1 — projeto configurado + comando de teste.**
+**Status: Fases 1 a 8 implementadas e compilando contra o servidor oficial 0.7.5.**
+Ainda **não foram testadas dentro do jogo** (o ambiente onde foram feitas não
+roda o cliente do Hytale). Use o roteiro de teste abaixo e me mande o log se algo falhar.
 
-## O que tem aqui
+## Estrutura
 
 ```
 hytale-combat-mod/
-├── build.gradle.kts            ← receita de compilação (Gradle)
-├── gradle.properties           ← nome, versão do mod e versão do servidor Hytale
-├── settings.gradle.kts
-├── gradlew / gradlew.bat       ← rode o Gradle por aqui (não precisa instalar)
-├── docs/PESQUISA_API.md        ← o que descobri sobre a API e o que é/não é possível
+├── build.gradle.kts / gradle.properties / settings.gradle.kts / gradlew
+├── docs/
+│   ├── PESQUISA_API.md        ← o que a API permite, limitações e contornos
+│   ├── ANIMACOES.md           ← lista completa das animações (Fase 7)
+│   └── modelos/               ← modelo de JSON para ligar suas animações
 └── src/main/
     ├── java/dev/alucady/combatedirecional/
-    │   ├── CombateDirecionalPlugin.java   ← ponto de entrada do plugin
-    │   ├── command/CombateCommand.java    ← comando /combate
-    │   └── config/CombatConfig.java       ← TODOS os números do combate
-    └── resources/                         ← isto É o asset pack
-        ├── manifest.json                  ← "IncludesAssetPack": true
-        └── Server/Languages/{en-US,pt-BR}/combatedirecional.lang
+    │   ├── CombateDirecionalPlugin.java     ← registra tudo
+    │   ├── config/CombatConfig.java         ← TODOS os números (vira CombatConfig.json)
+    │   ├── combat/
+    │   │   ├── Combatant.java               ← estado de combate de cada jogador/NPC
+    │   │   ├── CombatRules.java             ← regras: ataques, bloqueio, aparo, finta, quebra, esquiva, mana
+    │   │   ├── CombatTickSystem.java        ← roda a cada tick: timers, guarda pelo mouse, stamina, HUD
+    │   │   ├── CombatDamageFilter.java      ← invencibilidade e +25% de dano no exausto
+    │   │   ├── Direction.java / AttackKind.java
+    │   ├── interaction/CombatActionInteraction.java  ← liga os botões da espada às regras
+    │   ├── feel/Feedback.java               ← sons, partículas, câmera, títulos, animações
+    │   ├── hud/CombatHud.java               ← HUD de combate
+    │   ├── npc/DuelistBrain.java            ← IA do duelista
+    │   └── command/                         ← /combate e /duelista
+    └── resources/                           ← asset pack
+        ├── manifest.json
+        └── Server/
+            ├── Item/Items/CombateDirecional/CombateDirecional_Espada.json
+            ├── Item/Interactions/CombateDirecional/*.json
+            ├── Item/RootInteractions/CombateDirecional/*.json
+            └── Languages/{en-US,pt-BR}/combatedirecional.lang
 ```
 
-O mesmo arquivo `.jar` é **plugin Java + asset pack** ao mesmo tempo: o servidor
-lê o código Java e também as pastas `Server/` (e futuramente `Common/`) que
-estão dentro dele. Assim você só instala um arquivo.
+## Compilar e instalar
 
-## 1. Pré-requisitos
+1. Instale o **Java 25** ([Temurin](https://adoptium.net/)).
+2. Na pasta `hytale-combat-mod`: `gradlew.bat build` (Windows) ou `./gradlew build`.
+3. Copie `build/libs/CombateDirecional-0.2.0.jar` para a pasta `mods/` do servidor/mundo.
+4. Reinicie o servidor / reabra o mundo.
 
-1. **Java 25 (JDK).** Recomendo o [Eclipse Temurin 25](https://adoptium.net/).
-   Se não tiver, o Gradle tenta baixar sozinho na primeira compilação.
-2. **Hytale** instalado (para testar no jogo).
-3. Internet na primeira compilação (baixa o Gradle e o `Server.jar` oficial
-   de `https://maven.hytale.com/release`).
+Se o seu jogo não estiver na versão 0.7.x, troque `hytale_server_version` em
+`gradle.properties` e recompile.
 
-> A versão do servidor usada para compilar está em `gradle.properties`
-> (`hytale_server_version=0.7.5`). Se o seu jogo estiver em outra versão,
-> troque esse número (as versões disponíveis estão listadas
-> [aqui](https://maven.hytale.com/release/com/hypixel/hytale/Server/maven-metadata.xml))
-> e o `hytale_server_range` logo abaixo.
+## Controles (PC)
 
-## 2. Compilar
+Segure a **Espada de Duelo** (`/give CombateDirecional_Espada`).
 
-Abra um terminal **dentro da pasta `hytale-combat-mod`** e rode:
+| Ação | Como |
+|---|---|
+| Trocar guarda | **Gire a câmera rápido** para a esquerda/direita, ou **olhe rápido para cima** |
+| Ataque leve | Botão esquerdo (sai do lado da sua guarda) |
+| Ataque pesado | Botão direito |
+| Aparar | Botão direito **com a guarda certa** nos últimos 300 ms do golpe inimigo |
+| Quebra de guarda | Tecla de **Habilidade 1** |
+| Finta | Habilidade 1 **durante o seu pesado** (até 140 ms antes do impacto) |
+| Contra-quebra | Habilidade 1 **durante a quebra do inimigo** |
+| Esquiva curta | **Usar (F)** (ou a tecla de esquiva do jogo, se houver) — vai na direção em que você anda; parado = para trás |
+| Rolamento | Esquiva **correndo** |
+| Golpe Arcano (50 mana) | **Agachado** + pesado — imbloqueável |
+| Fúria (100 mana) | **Agachado** + Habilidade 1 — +50% de dano por 8 s |
 
-- Windows: `gradlew.bat build`
-- Linux/Mac: `./gradlew build`
+**Regra do lado:** um golpe que sai da **esquerda** de quem ataca chega na
+**direita** de quem defende (como de frente para um espelho). O HUD sempre diz
+para que lado você precisa virar a guarda. Se preferir sem espelho:
+`"Controls": {"MirrorSides": false}`.
 
-Deu certo se aparecer `BUILD SUCCESSFUL`. O mod fica em:
+Controles reserva (para testar sem depender das teclas):
+`/combate guarda <esquerda|cima|direita>` e `/combate acao <leve|pesado|quebra|esquiva|rolar>`.
 
-```
-build/libs/CombateDirecional-0.1.0.jar
-```
+## Roteiro de teste (fase por fase)
 
-## 3. Instalar
+Antes de tudo: `/combate` deve mostrar "Plugin Java: OK" e "Asset pack carregado!".
 
-Copie o `.jar` para a pasta **`mods`** do mundo/servidor. Dois jeitos:
+### Fase 2 — guarda, leve, pesado, bloqueio
+1. `/give CombateDirecional_Espada` e segure a espada.
+2. O HUD (canto inferior esquerdo) mostra `GUARDA ▲ CIMA`.
+3. Gire a câmera rápido para a esquerda → `GUARDA ◀ ESQUERDA`. Para a direita → `▶`. Olhe rápido para cima → `▲`.
+   - Se esquerda/direita ficarem invertidas: `"Controls": {"InvertYaw": true}`.
+   - Se trocar sem querer ao mirar: aumente `FlickYawDegrees` (ex.: 18).
+4. `/duelista` (ou `/duelista <papel>`; veja os papéis com `/duelista papeis`).
+5. Bata no duelista: clique esquerdo/direito. Ele perde vida; às vezes bloqueia (placa de nome).
+6. Quando ele atacar, a placa mostra `⚠LEVE ▶` e o HUD diz "bloqueie ▶ DIREITA". Vire a guarda para o lado indicado: o golpe não causa dano.
 
-- **Na mão:** copie `build/libs/CombateDirecional-0.1.0.jar` para a pasta `mods`.
-  - Servidor dedicado: `mods/` fica ao lado do `HytaleServer.jar`.
-  - Mundo single-player: o jogo roda um servidor local por baixo; coloque o
-    `.jar` na pasta `mods/` desse mundo (dentro da pasta de saves do Hytale).
-    Não consegui confirmar o caminho exato no seu sistema; se não achar, me
-    diga onde ficam seus saves e eu te guio.
-- **Automático:** `gradlew.bat instalarMod -PmodsDir="C:\caminho\para\mods"`
+### Fase 3 — stamina, exaustão, aparo, finta, quebra, contra-quebra
+1. Ataque várias vezes seguidas: a stamina no HUD cai; ao zerar aparece **EXAUSTO**.
+2. Fique parado: a stamina volta; o EXAUSTO some ao chegar em 55.
+3. **Aparo:** quando o HUD mostrar `[APARE AGORA!]`, aperte o botão direito com a guarda certa → título **APARO!**, duelista atordoado, +20 mana.
+4. **Finta:** comece um pesado e aperte Habilidade 1 logo em seguida → título **FINTA**.
+5. **Quebra:** Habilidade 1 perto do duelista → **QUEBRA!** e ele fica `✖ ATORDOADO`; um leve logo depois sempre acerta.
+6. **Contra-quebra:** quando o HUD mostrar "⚠ QUEBRA DE GUARDA!", aperte Habilidade 1 → **CONTRA-QUEBRA!**.
 
-Depois (re)inicie o servidor / reabra o mundo. Se o mundo tiver uma lista de
-mods, confira se “Alucady:CombateDirecional” está ativado.
+### Fase 4 — esquiva, rolamento, invencibilidade
+1. Aperte F (Usar): você dá um passo rápido; o HUD mostra "Esquiva (invencível)".
+2. Esquive no momento do golpe do duelista: título **ESQUIVOU!**, sem dano.
+3. Correndo + F: rolamento; no fim aparece "Rolamento (vulnerável)" (a brecha).
 
-## 4. Testar a Fase 1 ✅
+### Fase 5 — mana, Arcano, Fúria
+1. Acerte, bloqueie e apare para juntar mana (aparece no HUD; bloqueio +6, leve +10, pesado +15, aparo +20).
+2. Com 50+: agache e aperte o botão direito → **Golpe Arcano**; o duelista recebe "IMBLOQUEÁVEL!".
+3. Com 100: agache e aperte Habilidade 1 → **FÚRIA!**; o HUD mostra o tempo restante e o dano aumenta 50%.
 
-1. **No log do servidor**, procure:
-   ```
-   Combate Direcional 0.1.0 carregado! Config em: .../mods/Alucady_CombateDirecional/CombatConfig.json
-   ```
-2. **No jogo**, abra o chat e digite `/combate`. Deve aparecer:
-   - `=== Combate Direcional v0.1.0 ===`
-   - `Plugin Java: OK` (verde)
-   - `Asset pack carregado!` (verde) ← prova de que o asset pack foi lido
-   - Duas linhas com os valores (Leve 480 ms, Pesado 850 ms, …)
-3. **Teste o arquivo de configuração:**
-   1. Abra `mods/Alucady_CombateDirecional/CombatConfig.json`.
-   2. Mude `"WindupMs": 480` (dentro de `LightAttack`) para `400` e salve.
-   3. No jogo: `/combate recarregar` (precisa ser operador), depois `/combate`.
-   4. A linha deve mostrar `Leve: 400 ms`.
+### Fase 6 — indicadores e sensação
+- Ao acertar: som de impacto, partícula e tremida de câmera.
+- Títulos para APARO, QUEBRA, EXAUSTO, IMBLOQUEÁVEL.
+- Se o log mostrar "Efeito ... nao existe nesta versao", troque o ID em `Feel` no config (ou deixe `""`).
 
-Se algo falhar, me mande o trecho do log que tiver `CombateDirecional` ou `ERROR`/`SEVERE`.
+### Fase 7 — animações
+- Hoje toca as animações da espada do jogo como provisório.
+- Siga `docs/ANIMACOES.md` para criar as suas no Blockbench e ligá-las.
 
-## Configuração (`CombatConfig.json`)
+### Fase 8 — duelista
+- `/duelista` cria, `/duelista remover` remove. Ajuste a dificuldade em `Duelist` no config
+  (`ReactionChance`, `ParryChance`, `ThinkMinMs`…). Use em terreno plano.
 
-Todos os tempos estão em **milissegundos** (1000 ms = 1 s). Valores marcados
-como **PROPOSTA** no código não estavam na especificação e eu sugeri um valor
-inicial — ajuste à vontade:
+## Configuração (`mods/Alucady_CombateDirecional/CombatConfig.json`)
 
-| Seção | Campo | Padrão | |
-|---|---|---|---|
-| Roll | DurationMs | 700 | PROPOSTA |
-| Roll | RecoveryMs | 250 | PROPOSTA |
-| Stamina | Max | 100 | PROPOSTA |
-| Stamina | RegenPerSecond | 25 | PROPOSTA |
-| Stamina | RegenDelayMs | 600 | PROPOSTA |
-| Mana | Max | 100 | PROPOSTA (Fúria custa 100) |
+Criado automaticamente na primeira vez. Edite e use `/combate recarregar`.
+Tempos em milissegundos. Valores marcados como **PROPOSTA** no
+`CombatConfig.java` não estavam na sua especificação: sugeri um valor inicial.
 
-## Fases
+| Seção | O que controla |
+|---|---|
+| `LightAttack`, `HeavyAttack` | preparação, dano, stamina, mana, recuperação, finta |
+| `Block`, `Parry`, `GuardBreak` | mana do bloqueio, janela/atordoamento do aparo, quebra e contra-quebra |
+| `Dodge`, `Roll` | invencibilidade, stamina, força do impulso, brecha final |
+| `Stamina` | máximo, regeneração, exaustão (+25%), "só regenera parado", barra do jogo |
+| `Mana` | máximo, custo do Arcano/Fúria, multiplicador e duração da Fúria |
+| `Feel` | hit-stop, IDs de sons/partículas/câmera, títulos, placas de nome |
+| `Controls` | sensibilidade do flick, inverter, espelhar lados, exigir agachar |
+| `Reach` | alcance e ângulo dos golpes, distância do lock-on |
+| `Hud` | liga/desliga o HUD |
+| `Animations` | conjunto e IDs das animações |
+| `Duelist` | papel do NPC e dificuldade da IA |
 
-1. ✅ Projeto do plugin + asset pack + comando de teste
-2. Guarda direcional + ataques leve/pesado + bloqueio
-3. Stamina, exaustão, aparo, finta, quebra e contra-quebra
-4. Esquiva, rolamento e invencibilidade
-5. Mana, Golpe Arcano e Fúria
-6. Indicadores visuais e “sensação” (hit-stop, sons, partículas)
-7. Lista de animações + integração
-8. NPC duelista para treino
+## Limitações conhecidas
+
+Detalhes em `docs/PESQUISA_API.md`. Resumo: não dá para ler o mouse diretamente
+(por isso o "flick"), não há hit-stop visual de verdade (é lógico + tremida),
+correr não gasta stamina enquanto o espelhamento da barra está ligado, e o
+duelista anda sem pathfinding.

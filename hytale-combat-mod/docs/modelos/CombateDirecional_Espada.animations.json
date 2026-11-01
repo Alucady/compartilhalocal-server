@@ -1,0 +1,80 @@
+{
+  "Animations": {
+    "BlockLeft": {
+      "ThirdPerson": "Characters/Animations/CombateDirecional/BlockLeft.blockyanim",
+      "FirstPerson": "Characters/Animations/CombateDirecional/BlockLeft.blockyanim"
+    },
+    "BlockTop": {
+      "ThirdPerson": "Characters/Animations/CombateDirecional/BlockTop.blockyanim",
+      "FirstPerson": "Characters/Animations/CombateDirecional/BlockTop.blockyanim"
+    },
+    "BlockRight": {
+      "ThirdPerson": "Characters/Animations/CombateDirecional/BlockRight.blockyanim",
+      "FirstPerson": "Characters/Animations/CombateDirecional/BlockRight.blockyanim"
+    },
+    "LightLeft": {
+      "ThirdPerson": "Characters/Animations/CombateDirecional/LightLeft.blockyanim",
+      "FirstPerson": "Characters/Animations/CombateDirecional/LightLeft.blockyanim"
+    },
+    "LightTop": {
+      "ThirdPerson": "Characters/Animations/CombateDirecional/LightTop.blockyanim",
+      "FirstPerson": "Characters/Animations/CombateDirecional/LightTop.blockyanim"
+    },
+    "LightRight": {
+      "ThirdPerson": "Characters/Animations/CombateDirecional/LightRight.blockyanim",
+      "FirstPerson": "Characters/Animations/CombateDirecional/LightRight.blockyanim"
+    },
+    "HeavyLeft": {
+      "ThirdPerson": "Characters/Animations/CombateDirecional/HeavyLeft.blockyanim",
+      "FirstPerson": "Characters/Animations/CombateDirecional/HeavyLeft.blockyanim"
+    },
+    "HeavyTop": {
+      "ThirdPerson": "Characters/Animations/CombateDirecional/HeavyTop.blockyanim",
+      "FirstPerson": "Characters/Animations/CombateDirecional/HeavyTop.blockyanim"
+    },
+    "HeavyRight": {
+      "ThirdPerson": "Characters/Animations/CombateDirecional/HeavyRight.blockyanim",
+      "FirstPerson": "Characters/Animations/CombateDirecional/HeavyRight.blockyanim"
+    },
+    "GuardBreak": {
+      "ThirdPerson": "Characters/Animations/CombateDirecional/GuardBreak.blockyanim",
+      "FirstPerson": "Characters/Animations/CombateDirecional/GuardBreak.blockyanim"
+    },
+    "Parry": {
+      "ThirdPerson": "Characters/Animations/CombateDirecional/Parry.blockyanim",
+      "FirstPerson": "Characters/Animations/CombateDirecional/Parry.blockyanim"
+    },
+    "Stunned": {
+      "ThirdPerson": "Characters/Animations/CombateDirecional/Stunned.blockyanim",
+      "FirstPerson": "Characters/Animations/CombateDirecional/Stunned.blockyanim"
+    },
+    "DodgeForward": {
+      "ThirdPerson": "Characters/Animations/CombateDirecional/DodgeForward.blockyanim",
+      "FirstPerson": "Characters/Animations/CombateDirecional/DodgeForward.blockyanim"
+    },
+    "DodgeBack": {
+      "ThirdPerson": "Characters/Animations/CombateDirecional/DodgeBack.blockyanim",
+      "FirstPerson": "Characters/Animations/CombateDirecional/DodgeBack.blockyanim"
+    },
+    "DodgeLeft": {
+      "ThirdPerson": "Characters/Animations/CombateDirecional/DodgeLeft.blockyanim",
+      "FirstPerson": "Characters/Animations/CombateDirecional/DodgeLeft.blockyanim"
+    },
+    "DodgeRight": {
+      "ThirdPerson": "Characters/Animations/CombateDirecional/DodgeRight.blockyanim",
+      "FirstPerson": "Characters/Animations/CombateDirecional/DodgeRight.blockyanim"
+    },
+    "Roll": {
+      "ThirdPerson": "Characters/Animations/CombateDirecional/Roll.blockyanim",
+      "FirstPerson": "Characters/Animations/CombateDirecional/Roll.blockyanim"
+    },
+    "Arcane": {
+      "ThirdPerson": "Characters/Animations/CombateDirecional/Arcane.blockyanim",
+      "FirstPerson": "Characters/Animations/CombateDirecional/Arcane.blockyanim"
+    },
+    "Fury": {
+      "ThirdPerson": "Characters/Animations/CombateDirecional/Fury.blockyanim",
+      "FirstPerson": "Characters/Animations/CombateDirecional/Fury.blockyanim"
+    }
+  }
+}

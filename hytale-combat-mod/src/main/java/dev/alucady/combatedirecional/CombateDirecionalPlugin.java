@@ -1,9 +1,17 @@
 package dev.alucady.combatedirecional;
 
+import com.hypixel.hytale.component.ComponentType;
+import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import com.hypixel.hytale.server.core.util.Config;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import dev.alucady.combatedirecional.combat.Combatant;
+import dev.alucady.combatedirecional.combat.CombatDamageFilter;
+import dev.alucady.combatedirecional.combat.CombatTickSystem;
 import dev.alucady.combatedirecional.command.CombateCommand;
+import dev.alucady.combatedirecional.command.DuelistaCommand;
+import dev.alucady.combatedirecional.interaction.CombatActionInteraction;
 import dev.alucady.combatedirecional.config.CombatConfig;
 
 import javax.annotation.Nonnull;
@@ -22,6 +30,7 @@ public final class CombateDirecionalPlugin extends JavaPlugin {
 
     // withConfig() só pode ser chamado no construtor (antes do setup).
     private final Config<CombatConfig> config;
+    private ComponentType<EntityStore, Combatant> combatantType;
 
     public CombateDirecionalPlugin(@Nonnull JavaPluginInit init) {
         super(init);
@@ -38,6 +47,11 @@ public final class CombateDirecionalPlugin extends JavaPlugin {
         return this.config.get();
     }
 
+    /** Tipo do componente de estado de combate (registrado no setup). */
+    public ComponentType<EntityStore, Combatant> combatantType() {
+        return this.combatantType;
+    }
+
     /** Relê o CombatConfig.json do disco. */
     public void reloadConfig() {
         this.config.load().join();
@@ -45,7 +59,20 @@ public final class CombateDirecionalPlugin extends JavaPlugin {
 
     @Override
     protected void setup() {
+        // 1) Interação customizada: a espada do asset pack usa "Type": "CombateDirecional_Acao".
+        this.getCodecRegistry(Interaction.CODEC)
+                .register(CombatActionInteraction.TYPE_ID, CombatActionInteraction.class, CombatActionInteraction.CODEC);
+
+        // 2) Componente ECS com o estado de combate (não é salvo no disco).
+        this.combatantType = this.getEntityStoreRegistry().registerComponent(Combatant.class, Combatant::new);
+
+        // 3) Sistemas: tick do combate e filtro de dano (invencibilidade / exaustão).
+        this.getEntityStoreRegistry().registerSystem(new CombatTickSystem(this.combatantType));
+        this.getEntityStoreRegistry().registerSystem(new CombatDamageFilter(this.combatantType));
+
+        // 4) Comandos.
         this.getCommandRegistry().registerCommand(new CombateCommand(this));
+        this.getCommandRegistry().registerCommand(new DuelistaCommand());
         this.getLogger().at(Level.INFO).log("Combate Direcional: setup concluido.");
     }
 

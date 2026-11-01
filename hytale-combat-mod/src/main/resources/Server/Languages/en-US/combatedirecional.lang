@@ -1,4 +1,16 @@
 # Textos do mod. A chave final fica "combatedirecional.<chave>".
-commands.combate.desc = Directional Combat: shows the mod status and loaded settings.
+commands.combate.desc = Directional Combat: mod status and controls.
 commands.combate.recarregar.desc = Directional Combat: reloads CombatConfig.json from disk.
+commands.combate.hud.desc = Directional Combat: toggles the combat HUD.
+commands.combate.guarda.desc = Directional Combat: sets your guard (esquerda, cima, direita).
+commands.combate.guarda.arg = Direction: esquerda, cima or direita
+commands.combate.acao.desc = Directional Combat: performs an action (leve, pesado, quebra, esquiva, rolar).
+commands.combate.acao.arg = Action: leve, pesado, quebra, esquiva or rolar
+commands.duelista.desc = Directional Combat: spawns a training duelist in front of you.
+commands.duelista.papel = NPC role used as the duelist body
+commands.duelista.remover.desc = Directional Combat: removes the training duelists.
+commands.duelista.papeis.desc = Directional Combat: lists available NPC roles.
+commands.duelista.filtro = Text filter
 status.assetpack = Asset pack loaded!
+items.espada.name = Duelist Sword
+items.espada.description = Directional combat weapon. Flick the camera to change guard.
