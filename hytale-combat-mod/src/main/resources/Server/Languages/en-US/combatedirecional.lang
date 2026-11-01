@@ -1,0 +1,4 @@
+# Textos do mod. A chave final fica "combatedirecional.<chave>".
+commands.combate.desc = Directional Combat: shows the mod status and loaded settings.
+commands.combate.recarregar.desc = Directional Combat: reloads CombatConfig.json from disk.
+status.assetpack = Asset pack loaded!

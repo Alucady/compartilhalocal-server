@@ -1,0 +1,12 @@
+{
+  "Group": "${group}",
+  "Name": "${name}",
+  "Version": "${version}",
+  "Description": "${description}",
+  "Authors": [
+    { "Name": "${author}" }
+  ],
+  "Main": "dev.alucady.combatedirecional.CombateDirecionalPlugin",
+  "ServerVersion": "${serverRange}",
+  "IncludesAssetPack": true
+}

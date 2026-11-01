@@ -1,0 +1,4 @@
+# Textos do mod em portugues. A chave final fica "combatedirecional.<chave>".
+commands.combate.desc = Combate Direcional: mostra o status do mod e a configuracao carregada.
+commands.combate.recarregar.desc = Combate Direcional: recarrega o CombatConfig.json do disco.
+status.assetpack = Asset pack carregado!
